@@ -5,7 +5,6 @@ REPO="${1:-$GITHUB_REPOSITORY}"
 LABEL_CONFIG_JSON=$2
 MILESTONE_VERSION=$3
 
-# Use the tag name directly with 'v' prefix if milestone version not explicitly passed
 if [ -z "$MILESTONE_VERSION" ]; then
   MILESTONE_VERSION="${GITHUB_REF#refs/tags/}"
 fi
@@ -15,12 +14,15 @@ echo "🏷 Milestone version: $MILESTONE_VERSION"
 echo "⚙ Label configuration: $LABEL_CONFIG_JSON"
 
 # -------------------------
-# Authenticate for Issues Repository (Repo B)
+# Authenticate explicitly for Repo B (Issues Repository)
 # -------------------------
 if [ -n "$ISSUES_REPOSITORY_TOKEN" ]; then
+  # Clear GITHUB_TOKEN to avoid conflict
+  unset GITHUB_TOKEN
   echo "$ISSUES_REPOSITORY_TOKEN" | gh auth login --with-token
 else
-  echo "$GITHUB_TOKEN" | gh auth login --with-token
+  echo "❌ ERROR: ISSUES_REPOSITORY_TOKEN not provided."
+  exit 1
 fi
 
 # -------------------------
@@ -70,14 +72,12 @@ echo "✅ Changelog generated:"
 cat "$CHANGELOG_FILE"
 
 # -------------------------
-# Re-authenticate for Release Repository (Repo A)
+# IMPORTANT: Reset authentication to use GITHUB_TOKEN for Repo A
 # -------------------------
-echo "$GITHUB_TOKEN" | gh auth login --with-token
+gh auth logout --hostname github.com
+# Let gh CLI fallback to automatically using GITHUB_TOKEN from env
+# Ensure it's still exported
+export GITHUB_TOKEN="${GITHUB_TOKEN:-$GITHUB_TOKEN}"
 
-# -------------------------
-# Update release body in Repo A
-# -------------------------
-echo "🔗 Updating release body for tag $MILESTONE_VERSION in $GITHUB_REPOSITORY..."
+# Now use gh release edit (gh will automatically use GITHUB_TOKEN in env)
 gh release edit "$MILESTONE_VERSION" --repo "$GITHUB_REPOSITORY" --notes-file "$CHANGELOG_FILE"
-
-echo "🎉 Release body successfully updated!"
