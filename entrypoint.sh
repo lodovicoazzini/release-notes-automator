@@ -72,12 +72,9 @@ echo "✅ Changelog generated:"
 cat "$CHANGELOG_FILE"
 
 # -------------------------
-# IMPORTANT: Reset authentication to use GITHUB_TOKEN for Repo A
+# IMPORTANT: Reset authentication to use GH_TOKEN for Repo A
 # -------------------------
 gh auth logout --hostname github.com
-# Let gh CLI fallback to automatically using GITHUB_TOKEN from env
-# Ensure it's still exported
-export GITHUB_TOKEN="${GITHUB_TOKEN:-$GITHUB_TOKEN}"
 
-# Now use gh release edit (gh will automatically use GITHUB_TOKEN in env)
+# Now use gh release edit (gh will automatically use GH_TOKEN in env)
 gh release edit "$MILESTONE_VERSION" --repo "$GITHUB_REPOSITORY" --notes-file "$CHANGELOG_FILE"
