@@ -1,0 +1,21 @@
+name: Custom Issue Changelog Builder
+description: Generates changelog from closed issues in milestone with label grouping and templates.
+inputs:
+  repo:
+    description: "Repository to fetch issues from (format: owner/repo)"
+    required: false
+    default: ''
+  label_config:
+    description: "JSON array of label config with order, templates and section titles"
+    required: true
+  milestone_version:
+    description: "Version/milestone name (defaults to tag name)"
+    required: false
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - run: |
+        chmod +x ${{ github.action_path }}/entrypoint.sh
+        ${{ github.action_path }}/entrypoint.sh "${{ inputs.repo }}" '${{ inputs.label_config }}' "${{ inputs.milestone_version }}"
+      shell: bash
