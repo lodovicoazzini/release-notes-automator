@@ -17,8 +17,9 @@ echo "⚙ Label configuration: $LABEL_CONFIG_JSON"
 # Authenticate explicitly for Repo B (Issues Repository)
 # -------------------------
 if [ -n "$ISSUES_REPOSITORY_TOKEN" ]; then
-  # Clear GITHUB_TOKEN to avoid conflict
-  unset GITHUB_TOKEN
+  # Backup GH_TOKEN temporarily
+  ORIGINAL_GH_TOKEN="$GH_TOKEN"
+  unset GH_TOKEN
   echo "$ISSUES_REPOSITORY_TOKEN" | gh auth login --with-token
 else
   echo "❌ ERROR: ISSUES_REPOSITORY_TOKEN not provided."
@@ -76,5 +77,11 @@ cat "$CHANGELOG_FILE"
 # -------------------------
 gh auth logout --hostname github.com
 
-# Now use gh release edit (gh will automatically use GH_TOKEN in env)
+# -------------------------
+# Restore GH_TOKEN for Repo A (Release operations)
+# -------------------------
+export GH_TOKEN="$ORIGINAL_GH_TOKEN"
+
+# Now gh will use GH_TOKEN automatically for all further calls
+# No login needed, just execute the release edit
 gh release edit "$MILESTONE_VERSION" --repo "$GITHUB_REPOSITORY" --notes-file "$CHANGELOG_FILE"
