@@ -93,21 +93,24 @@ for i in $(seq 0 $(($LABEL_COUNT - 1))); do
 
   echo "📌 Section: $SECTION_TITLE (label: $LABEL_NAME)"  ### DEBUG
 
-  echo "### $SECTION_TITLE" >> "$CHANGELOG_FILE"
-  echo "" >> "$CHANGELOG_FILE"
-
+  # Fetch issues for the current label
   ISSUES=$(gh issue list --repo "$REPO" --milestone "$MILESTONE_VERSION" --state closed --label "$LABEL_NAME" --json number,title --jq '.[]')
 
   if [ -z "$ISSUES" ]; then
-    echo "_No issues found for label '$LABEL_NAME'_" >> "$CHANGELOG_FILE"
-  else
-    echo "$ISSUES" | jq -c '.' | while read -r issue; do
-      NUMBER=$(echo "$issue" | jq '.number')
-      TITLE=$(echo "$issue" | jq -r '.title')
-      ENTRY=$(echo "$TEMPLATE" | sed "s/\$NUMBER/$NUMBER/g" | sed "s/\$TITLE/$TITLE/g")
-      echo "$ENTRY" >> "$CHANGELOG_FILE"
-    done
+    echo "ℹ️ No issues found for label '$LABEL_NAME'. Skipping section."
+    continue
   fi
+
+  # Write section title only if issues exist
+  echo "### $SECTION_TITLE" >> "$CHANGELOG_FILE"
+  echo "" >> "$CHANGELOG_FILE"
+
+  echo "$ISSUES" | jq -c '.' | while read -r issue; do
+    NUMBER=$(echo "$issue" | jq '.number')
+    TITLE=$(echo "$issue" | jq -r '.title')
+    ENTRY=$(echo "$TEMPLATE" | sed "s/\$NUMBER/$NUMBER/g" | sed "s/\$TITLE/$TITLE/g")
+    echo "$ENTRY" >> "$CHANGELOG_FILE"
+  done
 
   echo "" >> "$CHANGELOG_FILE"
 done
