@@ -55,18 +55,43 @@ if [ -z "$MILESTONE_EXISTS" ]; then
 fi
 
 # -------------------------
+# Determine if LABEL_CONFIG_JSON is a file or raw JSON
+# -------------------------
+if [ -f "$LABEL_CONFIG_JSON" ]; then
+  echo "📄 Detected label config as file: $LABEL_CONFIG_JSON"
+  LABEL_JSON_CONTENT=$(cat "$LABEL_CONFIG_JSON")
+else
+  echo "🧾 Detected label config as raw JSON string"
+  LABEL_JSON_CONTENT="$LABEL_CONFIG_JSON"
+fi
+
+# -------------------------
+# Validate LABEL_CONFIG_JSON is valid JSON
+# -------------------------
+echo "🔍 Validating label config JSON..."
+if ! echo "$LABEL_JSON_CONTENT" | jq empty >/dev/null 2>&1; then
+  echo "❌ ERROR: Invalid label configuration JSON. Here's what was received:"
+  echo "$LABEL_JSON_CONTENT"
+  exit 1
+fi
+
+# -------------------------
 # Generate changelog
 # -------------------------
 CHANGELOG_FILE="changelog.md"
 echo "## Release Notes for $MILESTONE_VERSION" > "$CHANGELOG_FILE"
 echo "" >> "$CHANGELOG_FILE"
 
-LABEL_COUNT=$(echo "$LABEL_CONFIG_JSON" | jq '. | length')
+LABEL_COUNT=$(echo "$LABEL_JSON_CONTENT" | jq '. | length')
 
 for i in $(seq 0 $(($LABEL_COUNT - 1))); do
-  LABEL_NAME=$(echo "$LABEL_CONFIG_JSON" | jq -r ".[$i].label")
-  TEMPLATE=$(echo "$LABEL_CONFIG_JSON" | jq -r ".[$i].template")
-  SECTION_TITLE=$(echo "$LABEL_CONFIG_JSON" | jq -r ".[$i].section_title")
+  echo "🔍 Processing label index $i..."  ### DEBUG
+
+  LABEL_NAME=$(echo "$LABEL_JSON_CONTENT" | jq -r ".[$i].label")
+  TEMPLATE=$(echo "$LABEL_JSON_CONTENT" | jq -r ".[$i].template")
+  SECTION_TITLE=$(echo "$LABEL_JSON_CONTENT" | jq -r ".[$i].section_title")
+
+  echo "📌 Section: $SECTION_TITLE (label: $LABEL_NAME)"  ### DEBUG
 
   echo "### $SECTION_TITLE" >> "$CHANGELOG_FILE"
   echo "" >> "$CHANGELOG_FILE"
