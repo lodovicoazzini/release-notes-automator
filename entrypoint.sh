@@ -39,10 +39,6 @@ echo "🔍 Validating milestone exists in $REPO..."
 # Fetch API response
 MILESTONES_RESPONSE=$(gh api -H "Accept: application/vnd.github.v3+json" "/repos/$REPO/milestones" 2>&1)
 
-# Debug: Output the raw response
-echo "📦 Raw milestone response:"
-echo "$MILESTONES_RESPONSE"
-
 # Check if it's valid JSON
 if ! echo "$MILESTONES_RESPONSE" | jq empty >/dev/null 2>&1; then
   echo "❌ ERROR: GitHub API did not return valid JSON. Here's what was received:"
@@ -51,7 +47,7 @@ if ! echo "$MILESTONES_RESPONSE" | jq empty >/dev/null 2>&1; then
 fi
 
 # Try to extract the milestone
-MILESTONE_EXISTS=$(echo "$MILESTONES_RESPONSE" | jq -r ".[] | select(.title==\"$MILESTONE_VERSION\") | .number")
+MILESTONE_EXISTS=$(echo "$MILESTONES_RESPONSE" | jq -r --arg version "$MILESTONE_VERSION" '.[] | select(.title == $version) | .number')
 
 if [ -z "$MILESTONE_EXISTS" ]; then
   echo "❌ ERROR: Milestone '$MILESTONE_VERSION' does not exist in $REPO."
