@@ -9,6 +9,11 @@ if [ -z "$MILESTONE_VERSION" ]; then
   MILESTONE_VERSION="${GITHUB_REF#refs/tags/}"
 fi
 
+if [ -z "$LABEL_CONFIG_JSON" ]; then
+  echo "❌ ERROR: Label configuration JSON is missing."
+  exit 1
+fi
+
 echo "🔗 Issues will be fetched from: $REPO"
 echo "🏷 Milestone version: $MILESTONE_VERSION"
 echo "⚙ Label configuration: $LABEL_CONFIG_JSON"
@@ -30,7 +35,18 @@ fi
 # Check milestone exists in Issues Repository
 # -------------------------
 echo "🔍 Validating milestone exists in $REPO..."
-MILESTONE_EXISTS=$(gh api -H "Accept: application/vnd.github.v3+json" "/repos/$REPO/milestones" | jq -r ".[] | select(.title==\"$MILESTONE_VERSION\") | .number")
+# Capture and validate API response
+MILESTONES_RESPONSE=$(gh api -H "Accept: application/vnd.github.v3+json" "/repos/$REPO/milestones" 2>/dev/null)
+
+if ! echo "$MILESTONES_RESPONSE" | jq empty 2>/dev/null; then
+  echo "❌ ERROR: Failed to fetch or parse milestones from GitHub API."
+  echo "$MILESTONES_RESPONSE"
+  exit 1
+fi
+
+# Parse only if JSON is valid
+MILESTONE_EXISTS=$(echo "$MILESTONES_RESPONSE" | jq -r ".[] | select(.title==\"$MILESTONE_VERSION\") | .number")
+
 if [ -z "$MILESTONE_EXISTS" ]; then
   echo "❌ ERROR: Milestone '$MILESTONE_VERSION' does not exist in $REPO."
   exit 1
